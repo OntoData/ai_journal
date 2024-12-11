@@ -33,6 +33,15 @@ export default class JournalingAssistantPlugin extends Plugin {
                 await this.transcribeRecordings();
             },
         });
+
+        // Add command for summarizing journaling session
+        this.addCommand({
+            id: 'summarize-journal',
+            name: 'Summarize Journaling Session',
+            callback: async () => {
+                await this.summarizeJournalingSession();
+            },
+        });
     }
 
     async loadSettings() {
@@ -251,6 +260,133 @@ export default class JournalingAssistantPlugin extends Plugin {
         } catch (error) {
             new Notice(`Transcription failed: ${error.message}`);
             console.error('Transcription error:', error);
+        }
+    }
+
+    private async summarizeJournalingSession(): Promise<void> {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) {
+            new Notice('Please open a note first');
+            return;
+        }
+
+        if (!this.settings.openAIApiKey) {
+            new Notice('OpenAI API key not configured');
+            return;
+        }
+
+        if (!activeView.file) {
+            new Notice('No file is currently open');
+            return;
+        }
+
+        try {
+            // Save original content to inputs folder
+            const originalContent = activeView.editor.getValue();
+            const fileName = activeView.file.name;
+            const inputPath = `${this.settings.inputsFolder}/${fileName}`;
+            
+            await this.ensureFolder(this.settings.inputsFolder);
+            await this.app.vault.create(inputPath, originalContent);
+
+            // Process content (transcribe recordings if any)
+            let processedContent = originalContent;
+            const recordingPattern = AudioTranscriber.getRecordingEmbedPattern();
+            const recordings = originalContent.match(recordingPattern);
+
+            if (recordings) {
+                const transcriber = new AudioTranscriber(this.app.vault, this.settings.openAIApiKey);
+                for (const recording of recordings) {
+                    const fileName = recording.slice(3, -2);
+                    const file = this.app.metadataCache.getFirstLinkpathDest(fileName, "");
+                    
+                    if (file instanceof TFile) {
+                        const transcript = await transcriber.transcribeFile(file);
+                        processedContent = processedContent.replace(recording, transcript);
+                    }
+                }
+            }
+
+            // Extract user's response section
+            const responseMatch = processedContent.match(/## Your Journal Response\n\n([\s\S]*$)/);
+            if (!responseMatch) {
+                new Notice('Could not find journal response section');
+                return;
+            }
+
+            const userResponse = responseMatch[1];
+            
+            // Generate summary using GPT
+            const summary = await this.generateSummaryWithAI(userResponse);
+
+            // Replace response with summary
+            const updatedContent = processedContent.replace(
+                /## Your Journal Response\n\n[\s\S]*$/,
+                `## Your Journal Response\n\n${summary}`
+            );
+
+            // Update the note
+            activeView.editor.setValue(updatedContent);
+            new Notice('Journal session summarized');
+
+        } catch (error) {
+            new Notice(`Error: ${error.message}`);
+            console.error('Summarization error:', error);
+        }
+    }
+
+    private async generateSummaryWithAI(content: string): Promise<string> {
+        try {
+            const requestBody = {
+                model: 'gpt-4o',
+                messages: [{
+                    role: 'user',
+                    content: `${this.settings.defaultSummarizationPrompt}\n\n${content}`
+                }],
+                temperature: 0.7,
+            };
+
+            // Log the request
+            console.log('=== GPT Summary API Call ===');
+            console.log('Request:', {
+                prompt: this.settings.defaultSummarizationPrompt,
+                content: content.slice(0, 100) + '...', // First 100 chars for brevity
+                fullBody: requestBody
+            });
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.settings.openAIApiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            const data = await response.json();
+            
+            // Log the response
+            console.log('Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                data: data
+            });
+
+            if (!response.ok) {
+                throw new Error(data.error?.message || 'Failed to generate summary');
+            }
+
+            return data.choices[0].message.content;
+
+        } catch (error) {
+            console.error('Summary generation error:', error);
+            throw new Error('Failed to generate summary: ' + error.message);
+        }
+    }
+
+    private async ensureFolder(folderPath: string): Promise<void> {
+        if (!(await this.app.vault.adapter.exists(folderPath))) {
+            await this.app.vault.createFolder(folderPath);
         }
     }
 }
