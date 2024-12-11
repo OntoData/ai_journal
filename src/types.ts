@@ -1,8 +1,7 @@
 export interface JournalingAssistantSettings {
     journalFolder: string;
-    summariesFolder: string;
+    inputsFolder: string;
     openAIApiKey: string;
-    whisperApiKey: string;
     defaultJournalingPrompt: string;
     defaultSummarizationPrompt: string;
     numberOfPastEntries: number;
@@ -10,9 +9,8 @@ export interface JournalingAssistantSettings {
 
 export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
     journalFolder: 'Journal',
-    summariesFolder: 'Summaries',
+    inputsFolder: 'Inputs',
     openAIApiKey: '',
-    whisperApiKey: '',
     defaultJournalingPrompt: 'Generate a thought-provoking journaling prompt for today.',
     defaultSummarizationPrompt: 'Summarize the key points and insights from this journal entry.',
     numberOfPastEntries: 3,

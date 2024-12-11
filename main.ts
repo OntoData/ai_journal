@@ -1,5 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, TFile } from 'obsidian';
 import { JournalingAssistantSettings, DEFAULT_SETTINGS } from './src/types';
+import { AudioTranscriber } from './src/audioTranscriber';
 
 export default class JournalingAssistantPlugin extends Plugin {
     settings: JournalingAssistantSettings;
@@ -23,6 +24,15 @@ export default class JournalingAssistantPlugin extends Plugin {
                 await this.openTodaysJournal();
             },
         });
+
+        // Add command for transcribing recordings
+        this.addCommand({
+            id: 'transcribe-recordings',
+            name: 'Transcribe Recordings',
+            callback: async () => {
+                await this.transcribeRecordings();
+            },
+        });
     }
 
     async loadSettings() {
@@ -35,17 +45,6 @@ export default class JournalingAssistantPlugin extends Plugin {
 
     onunload() {
         console.log("Unloading Journaling Assistant Plugin...");
-    }
-
-    private insertHelloWorld() {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (activeView) {
-            const editor = activeView.editor;
-            editor.replaceSelection("Hello World");
-        } else {
-            // If there's no active markdown editor (e.g., no note open), do nothing or show a notice.
-            new Notice("No active note is open.");
-        }
     }
 
     private getTodayFileName(): string {
@@ -84,6 +83,7 @@ export default class JournalingAssistantPlugin extends Plugin {
 
     private async generatePromptWithAI(pastEntries: string[]): Promise<string> {
         if (!this.settings.openAIApiKey) {
+            new Notice('OpenAI API key not configured. Please add your API key in settings.');
             throw new Error('OpenAI API key not configured');
         }
 
@@ -123,12 +123,31 @@ export default class JournalingAssistantPlugin extends Plugin {
             console.log('Response:', JSON.stringify(data, null, 2));
             
             if (!response.ok) {
-                throw new Error(data.error?.message || 'API request failed');
+                console.error('OpenAI API error details:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    error: data.error
+                });
+                const errorMessage = data.error?.message || 'API request failed';
+                new Notice(`OpenAI API Error: ${errorMessage}`);
+                throw new Error(errorMessage);
             }
 
             return data.choices[0].message.content;
         } catch (error) {
-            console.error('OpenAI API error:', error);
+            console.error('OpenAI API error:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            
+            // Show a user-friendly error message
+            const userMessage = error.message.includes('Failed to fetch') 
+                ? 'Cannot connect to OpenAI API. Please check your internet connection.'
+                : `Error: ${error.message}`;
+            new Notice(userMessage);
+            
             throw new Error('Failed to generate prompt: ' + error.message);
         }
     }
@@ -139,35 +158,99 @@ export default class JournalingAssistantPlugin extends Plugin {
 
             const fileName = this.getTodayFileName();
             const filePath = `${this.settings.journalFolder}/${fileName}`;
+            
+            // Add debug logging
+            console.log('Opening journal with:', {
+                fileName,
+                filePath,
+                journalFolder: this.settings.journalFolder
+            });
+            
             let file = this.app.vault.getAbstractFileByPath(filePath);
 
-            // Get past entries and generate prompt
-            let initialContent = `# Journal Entry - ${new Date().toLocaleDateString()}\n\n`;
-            
-            try {
-                const pastEntries = await this.getPastJournalEntries(this.settings.numberOfPastEntries);
-                if (pastEntries.length > 0) {
-                    const aiPrompt = await this.generatePromptWithAI(pastEntries);
-                    initialContent += `## Today's Prompt\n\n${aiPrompt}\n\n## Your Journal Response\n\n`;
-                } else {
+            if (!file) {
+                // Only generate prompt if creating a new file
+                let initialContent = `# Journal Entry - ${new Date().toLocaleDateString()}\n\n`;
+                
+                try {
+                    const pastEntries = await this.getPastJournalEntries(this.settings.numberOfPastEntries);
+                    if (pastEntries.length > 0) {
+                        const aiPrompt = await this.generatePromptWithAI(pastEntries);
+                        initialContent += `## Today's Prompt\n\n${aiPrompt}\n\n## Your Journal Response\n\n`;
+                    } else {
+                        initialContent += `## Your Journal Response\n\n`;
+                    }
+                } catch (error) {
+                    new Notice('Error generating prompt: ' + error.message);
                     initialContent += `## Your Journal Response\n\n`;
                 }
-            } catch (error) {
-                new Notice('Error generating prompt: ' + error.message);
-                initialContent += `## Your Journal Response\n\n`;
-            }
 
-            if (!file) {
                 file = await this.app.vault.create(filePath, initialContent);
                 new Notice('Created new journal entry for today');
             }
 
-            const leaf = this.app.workspace.getUnpinnedLeaf();
+            const leaf = this.app.workspace.getLeaf(false);
             await leaf.openFile(file as TFile);
 
         } catch (error) {
             new Notice('Error opening today\'s journal: ' + error.message);
             console.error('Error opening today\'s journal:', error);
+        }
+    }
+
+    private async transcribeRecordings(): Promise<void> {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) {
+            new Notice('Please open a note first');
+            return;
+        }
+
+        if (!this.settings.openAIApiKey) {
+            new Notice('OpenAI API key not configured. Please add your API key in settings.');
+            return;
+        }
+
+        const editor = activeView.editor;
+        const content = editor.getValue();
+        const recordingPattern = AudioTranscriber.getRecordingEmbedPattern();
+        const recordings = content.match(recordingPattern);
+
+        if (!recordings || recordings.length === 0) {
+            new Notice('No recordings found in the current note');
+            return;
+        }
+
+        new Notice('Starting transcription...');
+
+        const transcriber = new AudioTranscriber(this.app.vault, this.settings.openAIApiKey);
+        let updatedContent = content;
+
+        try {
+            for (const recording of recordings) {
+                const fileName = recording.slice(3, -2); // Remove ![[...]]
+                const file = this.app.metadataCache.getFirstLinkpathDest(fileName, "");
+                
+                // Add logging
+                console.log('Processing recording:', {
+                    originalLink: recording,
+                    parsedFileName: fileName,
+                    resolvedFile: file?.path
+                });
+
+                if (file instanceof TFile) {
+                    console.log('Sending transcription request for:', file.path);
+                    const transcript = await transcriber.transcribeFile(file);
+                    console.log('Received transcription:', transcript);
+                    
+                    updatedContent = updatedContent.replace(recording, transcript);
+                }
+            }
+
+            editor.setValue(updatedContent);
+            new Notice('Transcription completed successfully');
+        } catch (error) {
+            new Notice(`Transcription failed: ${error.message}`);
+            console.error('Transcription error:', error);
         }
     }
 }
@@ -198,35 +281,24 @@ class JournalingAssistantSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Summaries Folder')
-            .setDesc('The folder where your journal summaries will be stored')
+            .setName('Journal Inputs Folder')
+            .setDesc('The folder where your journal inputs will be stored')
             .addText(text => text
-                .setPlaceholder('Summaries')
-                .setValue(this.plugin.settings.summariesFolder)
+                .setPlaceholder('Inputs')
+                .setValue(this.plugin.settings.inputsFolder)
                 .onChange(async (value) => {
-                    this.plugin.settings.summariesFolder = value;
+                    this.plugin.settings.inputsFolder = value;
                     await this.plugin.saveSettings();
                 }));
 
         new Setting(containerEl)
             .setName('OpenAI API Key')
-            .setDesc('Your OpenAI API key for generating prompts and summaries')
+            .setDesc('Your OpenAI API key for generating prompts, summaries, and transcriptions')
             .addText(text => text
                 .setPlaceholder('sk-...')
                 .setValue(this.plugin.settings.openAIApiKey)
                 .onChange(async (value) => {
                     this.plugin.settings.openAIApiKey = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('Whisper API Key')
-            .setDesc('Your Whisper API key for voice-to-text functionality')
-            .addText(text => text
-                .setPlaceholder('sk-...')
-                .setValue(this.plugin.settings.whisperApiKey)
-                .onChange(async (value) => {
-                    this.plugin.settings.whisperApiKey = value;
                     await this.plugin.saveSettings();
                 }));
 
