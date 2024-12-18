@@ -2,8 +2,5 @@
   "journalFolder": "folder_journaling/daily notes test",
   "inputsFolder": "folder_journaling/inputs",
   "openAIApiKey": "",
-  "defaultJournalingPrompt": "Generate a thought-provoking journaling prompt for today.",
-  "defaultSummarizationPrompt": "Summarize the key points and insights from this journal entry.",
-  "numberOfPastEntries": 3,
-  "summariesFolder": "journal summaries"
+  "numberOfPastEntries": 2
 }
