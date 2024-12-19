@@ -3,9 +3,13 @@ import { JournalingAssistantSettings } from '../types';
 import { OpenAIService } from './OpenAIService';
 import { WhisperService } from './WhisperService';
 import { TranscriptionService } from './TranscriptionService';
+import { SummarizationService } from './SummarizationService';
+import { PromptService } from './PromptService';
 
 export class JournalService {
     private whisperService: WhisperService;
+    private summarizationService: SummarizationService;
+    private promptService: PromptService;
 
     constructor(
         private app: App,
@@ -13,6 +17,8 @@ export class JournalService {
         private openAIService: OpenAIService
     ) {
         this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
+        this.summarizationService = new SummarizationService(this.openAIService);
+        this.promptService = new PromptService(this.openAIService);
     }
 
     updateSettings(settings: JournalingAssistantSettings) {
@@ -69,7 +75,7 @@ export class JournalService {
                     const loadingNotice = new Notice('Generating journal prompt...', 0);
                     
                     const pastEntries = await this.getPastJournalEntries(this.settings.numberOfPastEntries);
-                    const aiPrompt = await this.openAIService.generatePrompt(pastEntries);
+                    const aiPrompt = await this.promptService.generatePrompt(pastEntries);
                     loadingNotice.hide();
                     
                     initialContent += `${aiPrompt}\n\n## Your Journal Response\n\n`;
@@ -124,7 +130,7 @@ export class JournalService {
             }
 
             const userResponse = responseMatch[1];
-            const summary = await this.openAIService.generateSummary(userResponse);
+            const summary = await this.summarizationService.summarize(userResponse);
 
             // Replace response with summary
             const updatedContent = processedContent.replace(

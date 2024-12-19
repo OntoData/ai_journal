@@ -1,15 +1,11 @@
-import { Notice, TFile, Vault } from 'obsidian';
-import { AudioProcessingService } from './AudioProcessingService';
+import { TFile, Vault } from 'obsidian';
+import { TranscriptionService } from './TranscriptionService';
 
 export class WhisperService {
-    private audioProcessor: AudioProcessingService;
-
     constructor(
         private vault: Vault,
         private apiKey: string
-    ) {
-        this.audioProcessor = new AudioProcessingService(vault);
-    }
+    ) {}
 
     setApiKey(apiKey: string) {
         this.apiKey = apiKey;
@@ -21,13 +17,13 @@ export class WhisperService {
                 throw new Error('OpenAI API key is required for transcription');
             }
 
-            if (!AudioProcessingService.isSupportedFormat(audioFile)) {
+            if (!TranscriptionService.isSupportedFormat(audioFile)) {
                 throw new Error(`Unsupported audio format: ${audioFile.extension}`);
             }
 
-            const { blob, mimeType } = await this.audioProcessor.prepareAudioForTranscription(audioFile);
-            
             const formData = new FormData();
+            const arrayBuffer = await this.vault.readBinary(audioFile);
+            const blob = new Blob([arrayBuffer], { type: `audio/${audioFile.extension}` });
             formData.append('file', blob, `${audioFile.basename}.${audioFile.extension}`);
             formData.append('model', 'whisper-1');
 

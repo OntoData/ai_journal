@@ -1,7 +1,5 @@
 import { Notice } from 'obsidian';
 import { JournalingAssistantSettings } from '../types';
-import journalPrompt from '../prompts/journalPrompt';
-import summaryPrompt from '../prompts/summaryPrompt';
 
 export class OpenAIService {
     constructor(private settings: JournalingAssistantSettings) {}
@@ -10,25 +8,7 @@ export class OpenAIService {
         this.settings = settings;
     }
 
-    async generatePrompt(pastEntries: string[]): Promise<string> {
-        if (!this.settings.openAIApiKey) {
-            throw new Error('OpenAI API key not configured');
-        }
-
-        const pastEntriesText = pastEntries.length > 0 
-            ? `Past Entries:\n\n${pastEntries.join('\n\n---\n\n')}`
-            : 'No past entries available.';
-
-        const prompt = `${journalPrompt}\n\n${pastEntriesText}`;
-        return await this.makeOpenAIRequest(prompt);
-    }
-
-    async generateSummary(content: string): Promise<string> {
-        const prompt = `${summaryPrompt}\n\n${content}`;
-        return await this.makeOpenAIRequest(prompt);
-    }
-
-    private async makeOpenAIRequest(prompt: string): Promise<string> {
+    async makeOpenAIRequest(prompt: string): Promise<string> {
         if (!this.settings.openAIApiKey) {
             throw new Error('OpenAI API key not configured');
         }
