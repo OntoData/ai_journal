@@ -1,6 +1,6 @@
 {
-  "journalFolder": "folder_journaling/daily notes test",
-  "inputsFolder": "folder_journaling/inputs",
+  "journalFolder": "Journal",
+  "inputsFolder": "Inputs",
   "openAIApiKey": "",
   "numberOfPastEntries": 2
 }

@@ -8,14 +8,19 @@ export class WhisperService {
         private vault: Vault,
         private apiKey: string
     ) {
-        if (!apiKey) {
-            throw new Error('OpenAI API key is required');
-        }
         this.audioProcessor = new AudioProcessingService(vault);
+    }
+
+    setApiKey(apiKey: string) {
+        this.apiKey = apiKey;
     }
 
     async transcribeFile(audioFile: TFile): Promise<string> {
         try {
+            if (!this.apiKey) {
+                throw new Error('OpenAI API key is required for transcription');
+            }
+
             if (!AudioProcessingService.isSupportedFormat(audioFile)) {
                 throw new Error(`Unsupported audio format: ${audioFile.extension}`);
             }

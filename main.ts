@@ -63,6 +63,10 @@ export class JournalingAssistantPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+        // Update services with new settings
+        this.openAIService = new OpenAIService(this.settings);
+        this.transcriptionService.updateSettings(this.settings);
+        this.journalService.updateSettings(this.settings);
     }
 
     onunload() {

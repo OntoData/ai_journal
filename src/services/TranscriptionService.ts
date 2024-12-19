@@ -13,6 +13,11 @@ export class TranscriptionService {
         this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
     }
 
+    updateSettings(settings: JournalingAssistantSettings) {
+        this.settings = settings;
+        this.whisperService.setApiKey(settings.openAIApiKey);
+    }
+
     /**
      * Returns a RegExp pattern that matches Obsidian's embed syntax for supported audio formats
      * @see https://platform.openai.com/docs/api-reference/audio/createTranscription

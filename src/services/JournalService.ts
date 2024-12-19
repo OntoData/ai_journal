@@ -15,6 +15,11 @@ export class JournalService {
         this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
     }
 
+    updateSettings(settings: JournalingAssistantSettings) {
+        this.settings = settings;
+        this.whisperService.setApiKey(settings.openAIApiKey);
+    }
+
     private getTodayFileName(): string {
         const date = new Date();
         return date.toISOString().split('T')[0] + '.md'; // Format: YYYY-MM-DD.md

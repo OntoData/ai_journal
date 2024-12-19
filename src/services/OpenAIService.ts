@@ -6,6 +6,10 @@ import summaryPrompt from '../prompts/summaryPrompt';
 export class OpenAIService {
     constructor(private settings: JournalingAssistantSettings) {}
 
+    updateSettings(settings: JournalingAssistantSettings) {
+        this.settings = settings;
+    }
+
     async generatePrompt(pastEntries: string[]): Promise<string> {
         if (!this.settings.openAIApiKey) {
             throw new Error('OpenAI API key not configured');
@@ -25,6 +29,10 @@ export class OpenAIService {
     }
 
     private async makeOpenAIRequest(prompt: string): Promise<string> {
+        if (!this.settings.openAIApiKey) {
+            throw new Error('OpenAI API key not configured');
+        }
+
         try {
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
