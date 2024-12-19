@@ -1,14 +1,19 @@
 import { App, TFile, Notice, MarkdownView, View } from 'obsidian';
 import { JournalingAssistantSettings } from '../types';
 import { OpenAIService } from './OpenAIService';
-import { AudioTranscriber } from '../audioTranscriber';
+import { WhisperService } from './WhisperService';
+import { TranscriptionService } from './TranscriptionService';
 
 export class JournalService {
+    private whisperService: WhisperService;
+
     constructor(
         private app: App,
         private settings: JournalingAssistantSettings,
         private openAIService: OpenAIService
-    ) {}
+    ) {
+        this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
+    }
 
     private getTodayFileName(): string {
         const date = new Date();
@@ -133,12 +138,11 @@ export class JournalService {
     }
 
     private async processContent(content: string): Promise<string> {
-        const recordingPattern = AudioTranscriber.getRecordingEmbedPattern();
+        const recordingPattern = TranscriptionService.getRecordingEmbedPattern();
         const recordings = content.match(recordingPattern);
 
         if (!recordings) return content;
 
-        const transcriber = new AudioTranscriber(this.app.vault, this.settings.openAIApiKey);
         let processedContent = content;
 
         for (const recording of recordings) {
@@ -146,7 +150,7 @@ export class JournalService {
             const file = this.app.metadataCache.getFirstLinkpathDest(fileName, "");
             
             if (file instanceof TFile) {
-                const transcript = await transcriber.transcribeFile(file);
+                const transcript = await this.whisperService.transcribeFile(file);
                 processedContent = processedContent.replace(recording, transcript);
             }
         }

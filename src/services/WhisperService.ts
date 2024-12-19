@@ -1,27 +1,35 @@
 import { Notice, TFile, Vault } from 'obsidian';
+import { AudioProcessingService } from './AudioProcessingService';
 
-export class AudioTranscriber {
-    private vault: Vault;
-    private apiKey: string;
+export class WhisperService {
+    private audioProcessor: AudioProcessingService;
 
-    constructor(vault: Vault, apiKey: string) {
-        this.vault = vault;
-        this.apiKey = apiKey;
+    constructor(
+        private vault: Vault,
+        private apiKey: string
+    ) {
+        if (!apiKey) {
+            throw new Error('OpenAI API key is required');
+        }
+        this.audioProcessor = new AudioProcessingService(vault);
     }
 
     async transcribeFile(audioFile: TFile): Promise<string> {
         try {
-            const arrayBuffer = await this.vault.readBinary(audioFile);
-            const blob = new Blob([arrayBuffer], { type: 'audio/webm' });
+            if (!AudioProcessingService.isSupportedFormat(audioFile)) {
+                throw new Error(`Unsupported audio format: ${audioFile.extension}`);
+            }
+
+            const { blob, mimeType } = await this.audioProcessor.prepareAudioForTranscription(audioFile);
             
             const formData = new FormData();
-            formData.append('file', blob, audioFile.name);
+            formData.append('file', blob, `${audioFile.basename}.${audioFile.extension}`);
             formData.append('model', 'whisper-1');
 
             const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Authorization': `Bearer ${this.apiKey}`
                 },
                 body: formData,
             });
@@ -37,9 +45,5 @@ export class AudioTranscriber {
             console.error('Transcription error:', error);
             throw error;
         }
-    }
-
-    static getRecordingEmbedPattern(): RegExp {
-        return /!\[\[Recording \d{14}\.webm\]\]/g;
     }
 } 

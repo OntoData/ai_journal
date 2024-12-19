@@ -3,7 +3,6 @@ import { JournalingAssistantSettings, DEFAULT_SETTINGS } from './src/types';
 import { JournalService } from './src/services/JournalService';
 import { OpenAIService } from './src/services/OpenAIService';
 import { JournalingAssistantSettingTab } from './src/settings/SettingTab';
-import { AudioTranscriber } from './src/audioTranscriber';
 import { TranscriptionService } from './src/services/TranscriptionService';
 
 export class JournalingAssistantPlugin extends Plugin {

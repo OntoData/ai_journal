@@ -1,13 +1,25 @@
 import { Notice, MarkdownView, TFile } from 'obsidian';
-import { AudioTranscriber } from '../audioTranscriber';
+import { WhisperService } from './WhisperService';
 import type { App } from 'obsidian';
 import type { JournalingAssistantSettings } from '../types';
 
 export class TranscriptionService {
+    private whisperService: WhisperService;
+
     constructor(
         private app: App,
         private settings: JournalingAssistantSettings
-    ) {}
+    ) {
+        this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
+    }
+
+    /**
+     * Returns a RegExp pattern that matches Obsidian's embed syntax for supported audio formats
+     * @see https://platform.openai.com/docs/api-reference/audio/createTranscription
+     */
+    static getRecordingEmbedPattern(): RegExp {
+        return /!\[\[.+\.(flac|mp3|mp4|mpeg|mpga|m4a|ogg|wav|webm)\]\]/g;
+    }
 
     async transcribeRecordings(): Promise<void> {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -23,7 +35,7 @@ export class TranscriptionService {
 
         const editor = activeView.editor;
         const content = editor.getValue();
-        const recordingPattern = AudioTranscriber.getRecordingEmbedPattern();
+        const recordingPattern = TranscriptionService.getRecordingEmbedPattern();
         const recordings = content.match(recordingPattern);
 
         if (!recordings || recordings.length === 0) {
@@ -33,22 +45,37 @@ export class TranscriptionService {
 
         new Notice('Starting transcription...');
 
-        const transcriber = new AudioTranscriber(this.app.vault, this.settings.openAIApiKey);
         let updatedContent = content;
+        let hasErrors = false;
 
         try {
             for (const recording of recordings) {
                 const fileName = recording.slice(3, -2); // Remove ![[...]]
                 const file = this.app.metadataCache.getFirstLinkpathDest(fileName, "");
                 
-                if (file instanceof TFile) {
-                    const transcript = await transcriber.transcribeFile(file);
+                if (!(file instanceof TFile)) {
+                    new Notice(`Could not find file: ${fileName}`);
+                    hasErrors = true;
+                    continue;
+                }
+
+                try {
+                    const transcript = await this.whisperService.transcribeFile(file);
                     updatedContent = updatedContent.replace(recording, transcript);
+                } catch (error) {
+                    new Notice(`Failed to transcribe ${fileName}: ${error.message}`);
+                    hasErrors = true;
+                    continue;
                 }
             }
 
             editor.setValue(updatedContent);
-            new Notice('Transcription completed successfully');
+            
+            if (hasErrors) {
+                new Notice('Transcription completed with some errors');
+            } else {
+                new Notice('Transcription completed successfully');
+            }
         } catch (error) {
             new Notice(`Transcription failed: ${error.message}`);
             console.error('Transcription error:', error);
