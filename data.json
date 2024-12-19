@@ -2,5 +2,6 @@
   "journalFolder": "Journal",
   "inputsFolder": "Inputs",
   "openAIApiKey": "",
-  "numberOfPastEntries": 2
+  "numberOfPastEntries": 2,
+  "useStreamingResponse": true
 }

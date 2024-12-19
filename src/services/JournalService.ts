@@ -70,27 +70,49 @@ export class JournalService {
 
             if (!file) {
                 let initialContent = `# Journal Entry - ${new Date().toLocaleDateString()}\n\n`;
+                file = await this.app.vault.create(filePath, initialContent);
                 
                 try {
                     const loadingNotice = new Notice('Generating journal prompt...', 0);
-                    
                     const pastEntries = await this.getPastJournalEntries(this.settings.numberOfPastEntries);
-                    const aiPrompt = await this.promptService.generatePrompt(pastEntries);
-                    loadingNotice.hide();
                     
-                    initialContent += `${aiPrompt}\n\n## Your Journal Response\n\n`;
+                    // Create the file with initial content first
+                    const leaf = this.app.workspace.getLeaf(false);
+                    await leaf.openFile(file as TFile);
+                    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                    
+                    if (view) {
+                        if (this.settings.useStreamingResponse) {
+                            // Stream the AI response directly into the editor
+                            await this.promptService.generatePrompt(pastEntries, (chunk) => {
+                                const currentContent = view.editor.getValue();
+                                view.editor.setValue(currentContent + chunk);
+                            });
+                        } else {
+                            // Get the complete response and update the editor once
+                            const aiPrompt = await this.promptService.generatePrompt(pastEntries);
+                            view.editor.setValue(view.editor.getValue() + aiPrompt);
+                        }
+                        
+                        // Add the response section after the prompt
+                        const finalContent = view.editor.getValue();
+                        view.editor.setValue(finalContent + '\n\n## Your Journal Response\n\n');
+                    }
+                    
+                    loadingNotice.hide();
+                    new Notice('Created new journal entry for today');
                 } catch (error) {
                     new Notice('Error generating prompt: ' + error.message);
-                    initialContent += `## Your Journal Response\n\n`;
+                    // Add empty response section if prompt generation fails
+                    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                    if (view) {
+                        view.editor.setValue(view.editor.getValue() + '\n\n## Your Journal Response\n\n');
+                    }
                 }
-
-                file = await this.app.vault.create(filePath, initialContent);
-                new Notice('Created new journal entry for today');
-                console.log(initialContent);
+            } else {
+                const leaf = this.app.workspace.getLeaf(false);
+                await leaf.openFile(file as TFile);
             }
-
-            const leaf = this.app.workspace.getLeaf(false);
-            await leaf.openFile(file as TFile);
 
         } catch (error) {
             new Notice('Error opening today\'s journal: ' + error.message);
@@ -130,15 +152,35 @@ export class JournalService {
             }
 
             const userResponse = responseMatch[1];
-            const summary = await this.summarizationService.summarize(userResponse);
+            let summary: string;
 
-            // Replace response with summary
+            if (this.settings.useStreamingResponse) {
+                // Create a temporary variable to store the streamed summary
+                let streamedSummary = '';
+                summary = await this.summarizationService.summarize(
+                    userResponse,
+                    true,
+                    (chunk) => {
+                        streamedSummary += chunk;
+                        // Update the editor in real-time with the partial summary
+                        const updatedContent = processedContent.replace(
+                            /## Your Journal Response\n\n[\s\S]*$/,
+                            `## Your Journal Response\n\n${streamedSummary}`
+                        );
+                        activeView.editor.setValue(updatedContent);
+                    }
+                );
+            } else {
+                // Get the complete summary at once
+                summary = await this.summarizationService.summarize(userResponse);
+            }
+
+            // Update the note with the final summary
             const updatedContent = processedContent.replace(
                 /## Your Journal Response\n\n[\s\S]*$/,
                 `## Your Journal Response\n\n${summary}`
             );
 
-            // Update the note
             activeView.editor.setValue(updatedContent);
             new Notice('Journal session summarized');
 

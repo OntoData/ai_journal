@@ -3,6 +3,7 @@ export interface JournalingAssistantSettings {
     inputsFolder: string;
     openAIApiKey: string;
     numberOfPastEntries: number;
+    useStreamingResponse: boolean;
 }
 
 export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
@@ -10,4 +11,5 @@ export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
     inputsFolder: 'Inputs',
     openAIApiKey: '',
     numberOfPastEntries: 3,
+    useStreamingResponse: true,
 }; 

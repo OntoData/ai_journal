@@ -8,7 +8,7 @@ export class OpenAIService {
         this.settings = settings;
     }
 
-    async makeOpenAIRequest(prompt: string): Promise<string> {
+    async makeOpenAIRequest(prompt: string, onChunk?: (chunk: string) => void): Promise<string> {
         if (!this.settings.openAIApiKey) {
             throw new Error('OpenAI API key not configured');
         }
@@ -24,14 +24,52 @@ export class OpenAIService {
                     model: 'gpt-4o-mini',
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.7,
+                    stream: !!onChunk, // Enable streaming if onChunk callback is provided
                 }),
             });
 
-            const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error?.message || 'API request failed');
+                const error = await response.json();
+                throw new Error(error.error?.message || 'API request failed');
             }
 
+            // Handle streaming response
+            if (onChunk) {
+                const reader = response.body?.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+
+                if (!reader) throw new Error('Response body is null');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                    for (const line of lines) {
+                        if (line.includes('[DONE]')) continue;
+                        if (!line.startsWith('data:')) continue;
+
+                        try {
+                            const json = JSON.parse(line.slice(5));
+                            const content = json.choices[0]?.delta?.content;
+                            if (content) {
+                                fullResponse += content;
+                                onChunk(content);
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse streaming response:', e);
+                        }
+                    }
+                }
+
+                return fullResponse;
+            }
+
+            // Handle non-streaming response
+            const data = await response.json();
             return data.choices[0].message.content;
         } catch (error) {
             console.error('OpenAI API error:', error);

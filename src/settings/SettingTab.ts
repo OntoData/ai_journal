@@ -56,5 +56,15 @@ export class JournalingAssistantSettingTab extends PluginSettingTab {
                     this.plugin.settings.numberOfPastEntries = value;
                     await this.plugin.saveSettings();
                 }));
+
+        new Setting(containerEl)
+            .setName('Use Streaming Response')
+            .setDesc('Stream AI responses in real-time (recommended for better experience)')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.useStreamingResponse)
+                .onChange(async (value) => {
+                    this.plugin.settings.useStreamingResponse = value;
+                    await this.plugin.saveSettings();
+                }));
     }
 } 
