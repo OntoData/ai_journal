@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownView, Notice } from 'obsidian';
+import { App, Plugin, MarkdownView, Notice, Menu } from 'obsidian';
 import { JournalingAssistantSettings, DEFAULT_SETTINGS } from './src/types';
 import { JournalService } from './src/services/JournalService';
 import { OpenAIService } from './src/services/OpenAIService';
@@ -22,8 +22,30 @@ export class JournalingAssistantPlugin extends Plugin {
         this.addSettingTab(new JournalingAssistantSettingTab(this.app, this));
 
         // Add ribbon icon
-        this.addRibbonIcon('bot', 'Journal with AI', async () => {
-            await this.journalService.openTodaysJournal();
+        this.addRibbonIcon('bot', 'Journaling Assistant', (evt: MouseEvent | PointerEvent) => {
+            const menu = new Menu();
+            menu.addItem((item) =>
+                item
+                    .setTitle("Open Today's Journal")
+                    .onClick(() => {
+                        this.journalService.openTodaysJournal();
+                    })
+            );
+            menu.addItem((item) =>
+                item
+                    .setTitle("Chat with AI")
+                    .onClick(() => {
+                        this.journalService.chatWithAI();
+                    })
+            );
+            menu.addItem((item) =>
+                item
+                    .setTitle("Summarize Journaling Session")
+                    .onClick(() => {
+                        this.journalService.summarizeJournalingSession();
+                    })
+            );
+            menu.showAtMouseEvent(evt);
         });
 
         this.addCommands();
@@ -51,6 +73,15 @@ export class JournalingAssistantPlugin extends Plugin {
             name: 'Summarize Journaling Session',
             callback: async () => {
                 await this.journalService.summarizeJournalingSession();
+            },
+        });
+
+        // New Chat with AI command
+        this.addCommand({
+            id: 'chat-with-ai',
+            name: 'Chat with AI',
+            callback: async () => {
+                await this.journalService.chatWithAI();
             },
         });
     }

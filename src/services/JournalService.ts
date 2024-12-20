@@ -5,11 +5,14 @@ import { WhisperService } from './WhisperService';
 import { TranscriptionService } from './TranscriptionService';
 import { SummarizationService } from './SummarizationService';
 import { PromptService } from './PromptService';
+import { ChatService } from './ChatService';
 
 export class JournalService {
     private whisperService: WhisperService;
     private summarizationService: SummarizationService;
     private promptService: PromptService;
+    private chatService: ChatService;
+    private transcriptionService: TranscriptionService;
 
     constructor(
         private app: App,
@@ -19,11 +22,15 @@ export class JournalService {
         this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
         this.summarizationService = new SummarizationService(this.openAIService);
         this.promptService = new PromptService(this.openAIService);
+        this.chatService = new ChatService(this.openAIService);
+        this.transcriptionService = new TranscriptionService(this.app, this.settings);
     }
 
     updateSettings(settings: JournalingAssistantSettings) {
         this.settings = settings;
         this.whisperService.setApiKey(settings.openAIApiKey);
+        this.transcriptionService.updateSettings(settings);
+        this.openAIService.updateSettings(settings);
     }
 
     private getTodayFileName(): string {
@@ -209,5 +216,33 @@ export class JournalService {
         }
 
         return processedContent;
+    }
+
+    async chatWithAI(): Promise<void> {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) {
+            new Notice('Please open a note first');
+            return;
+        }
+
+        // 1) Transcribe any audio recordings in the note
+        await this.transcriptionService.transcribeRecordings();
+
+        // 2) Retrieve updated content
+        const content = activeView.editor.getValue();
+
+        try {
+            // 3) Pass the text to ChatService
+            const chatResponse = await this.chatService.chat(content);
+
+            // 4) Append the AI’s reply
+            activeView.editor.setValue(
+                content + '\n\n## AI Chat\n\n' + chatResponse
+            );
+
+            new Notice('AI responded in note');
+        } catch (error: any) {
+            new Notice(`Error during chat: ${error.message}`);
+        }
     }
 } 
