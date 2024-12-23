@@ -237,7 +237,7 @@ export class JournalService {
 
             // 4) Append the AI’s reply
             activeView.editor.setValue(
-                content + '\n\n## AI Chat\n\n' + chatResponse
+                content + '\n\n---\n## AI Chat\n\n' + chatResponse + '\n\n---' + '\n## Me'
             );
 
             new Notice('AI responded in note');
