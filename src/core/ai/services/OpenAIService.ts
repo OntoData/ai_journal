@@ -1,7 +1,8 @@
 import { Notice } from 'obsidian';
-import { JournalingAssistantSettings } from '../types';
+import { JournalingAssistantSettings } from '../../../types';
+import { IOpenAIService } from '../../../interfaces';
 
-export class OpenAIService {
+export class OpenAIService implements IOpenAIService {
     constructor(private settings: JournalingAssistantSettings) {}
 
     updateSettings(settings: JournalingAssistantSettings) {
@@ -24,7 +25,7 @@ export class OpenAIService {
                     model: 'gpt-4o-mini',
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.7,
-                    stream: !!onChunk, // Enable streaming if onChunk callback is provided
+                    stream: !!onChunk,
                 }),
             });
 
@@ -33,7 +34,6 @@ export class OpenAIService {
                 throw new Error(error.error?.message || 'API request failed');
             }
 
-            // Handle streaming response
             if (onChunk) {
                 const reader = response.body?.getReader();
                 const decoder = new TextDecoder();
@@ -68,7 +68,6 @@ export class OpenAIService {
                 return fullResponse;
             }
 
-            // Handle non-streaming response
             const data = await response.json();
             return data.choices[0].message.content;
         } catch (error) {

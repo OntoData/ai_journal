@@ -1,8 +1,3 @@
-/**
- * Prompt for summarizing journal entries
- * Extracts key insights, patterns, and meaningful reflections
- * from the user's journaling session.
- */
 export default `As a journaling assistant, analyze this journal entry and create a summary of journaling conversation.
 
 Please follow these guidelines:

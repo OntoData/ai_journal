@@ -1,16 +1,11 @@
 import { Notice } from 'obsidian';
-import { OpenAIService } from './OpenAIService';
-import summaryPrompt from '../prompts/summaryPrompt';
+import { OpenAIService } from '../ai/services/OpenAIService';
+import { ISummarizationService } from '../../interfaces';
+import summaryPrompt from '../ai/prompts/summaryPrompt';
 
-export class SummarizationService {
+export class SummarizationService implements ISummarizationService {
     constructor(private openAIService: OpenAIService) {}
 
-    /**
-     * Takes the user's journal response and returns a summary
-     * @param content The content to summarize
-     * @param useStreaming Whether to stream the response
-     * @param onChunk Optional callback for streaming responses
-     */
     async summarize(
         content: string, 
         useStreaming: boolean = false,

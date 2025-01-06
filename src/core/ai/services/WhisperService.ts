@@ -1,7 +1,8 @@
 import { TFile, Vault } from 'obsidian';
-import { TranscriptionService } from './TranscriptionService';
+import { IWhisperService } from '../../../interfaces';
+import { isSupportedAudioFormat } from '../../../utils/helpers';
 
-export class WhisperService {
+export class WhisperService implements IWhisperService {
     constructor(
         private vault: Vault,
         private apiKey: string
@@ -17,7 +18,7 @@ export class WhisperService {
                 throw new Error('OpenAI API key is required for transcription');
             }
 
-            if (!TranscriptionService.isSupportedFormat(audioFile)) {
+            if (!isSupportedAudioFormat(audioFile)) {
                 throw new Error(`Unsupported audio format: ${audioFile.extension}`);
             }
 

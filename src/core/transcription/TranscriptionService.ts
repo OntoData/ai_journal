@@ -1,9 +1,11 @@
-import { Notice, MarkdownView, TFile, Vault } from 'obsidian';
-import { WhisperService } from './WhisperService';
+import { Notice, MarkdownView, TFile } from 'obsidian';
+import { WhisperService } from '../ai/services/WhisperService';
+import { ITranscriptionService } from '../../interfaces';
+import { JournalingAssistantSettings } from '../../types';
+import { getRecordingEmbedPattern, isSupportedAudioFormat } from '../../utils/helpers';
 import type { App } from 'obsidian';
-import type { JournalingAssistantSettings } from '../types';
 
-export class TranscriptionService {
+export class TranscriptionService implements ITranscriptionService {
     private whisperService: WhisperService;
 
     constructor(
@@ -16,52 +18,6 @@ export class TranscriptionService {
     updateSettings(settings: JournalingAssistantSettings) {
         this.settings = settings;
         this.whisperService.setApiKey(settings.openAIApiKey);
-    }
-
-    /**
-     * Checks if the file format is directly supported by Whisper API
-     */
-    public static isSupportedFormat(file: TFile): boolean {
-        const supportedFormats = ['flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm'];
-        const extension = file.extension.toLowerCase();
-        return supportedFormats.includes(extension);
-    }
-
-    /**
-     * Prepares audio file for transcription
-     */
-    private async prepareAudioForTranscription(file: TFile): Promise<{ blob: Blob; mimeType: string }> {
-        const arrayBuffer = await this.app.vault.readBinary(file);
-        const extension = file.extension.toLowerCase();
-        
-        const mimeTypes: { [key: string]: string } = {
-            'flac': 'audio/flac',
-            'mp3': 'audio/mpeg',
-            'mp4': 'audio/mp4',
-            'mpeg': 'audio/mpeg',
-            'mpga': 'audio/mpeg',
-            'm4a': 'audio/mp4',
-            'ogg': 'audio/ogg',
-            'wav': 'audio/wav',
-            'webm': 'audio/webm'
-        };
-
-        const mimeType = mimeTypes[extension];
-        if (!mimeType) {
-            throw new Error(`Unsupported MIME type for extension: ${extension}`);
-        }
-
-        return {
-            blob: new Blob([arrayBuffer], { type: mimeType }),
-            mimeType
-        };
-    }
-
-    /**
-     * Returns a RegExp pattern that matches Obsidian's embed syntax for supported audio formats
-     */
-    static getRecordingEmbedPattern(): RegExp {
-        return /!\[\[.+\.(flac|mp3|mp4|mpeg|mpga|m4a|ogg|wav|webm)\]\]/g;
     }
 
     async transcribeRecordings(): Promise<void> {
@@ -78,7 +34,7 @@ export class TranscriptionService {
 
         const editor = activeView.editor;
         const content = editor.getValue();
-        const recordingPattern = TranscriptionService.getRecordingEmbedPattern();
+        const recordingPattern = getRecordingEmbedPattern();
         const recordings = content.match(recordingPattern);
 
         if (!recordings || recordings.length === 0) {
