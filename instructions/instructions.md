@@ -12,6 +12,7 @@ An Obsidian plugin that enhances the journaling experience with AI-powered featu
 - Core Libraries:
   - obsidian: Core Obsidian API functionality
   - openai: OpenAI API integration
+  - Currently using model: gpt-4o-mini
 
 Brief explanation of technology choices:
 
@@ -29,16 +30,18 @@ Manages the creation and organization of daily journal entries with AI-generated
 #### User Interactions
 
 - User can create a new journal entry for the current day
-- User can access past journal entries
-- System automatically generates contextual prompts based on previous entries
-- User can write responses in a dedicated section
+- System generates AI prompts based on past entries (configurable number of entries)
+- Entries are organized by date (YYYY-MM-DD format)
+- User responses are separated into dedicated sections
+- Past entries are used for context in new prompts
 
 #### Technical Requirements
 
 - File system operations for journal creation and management
-- Date handling for entry organization
-- Integration with OpenAI API for journal prompt generation
-- Settings management for journal folder location
+- Date handling for entry organization (YYYY-MM-DD format)
+- Integration with OpenAI API for contextual prompt generation
+- Settings management for journal folder location and past entries count
+- Streaming response support for real-time prompt generation
 
 ### 2. AI Chat Integration
 
@@ -47,17 +50,17 @@ Enables interactive conversations with AI within journal entries, providing guid
 
 #### User Interactions
 
-- User can initiate AI chat from the ribbon menu or command palette
-- AI responds contextually based on journal content
-- Chat history is preserved within the journal entry
-- Streaming responses for real-time interaction
+- User can initiate AI chat from ribbon menu or command palette
+- Chat responses are appended to the current note
+- Supports streaming responses for real-time interaction
+- Maintains conversation context within the note
 
 #### Technical Requirements
 
-- OpenAI API integration for chat functionality
-- Streaming response handling
-- Context management for meaningful interactions
+- OpenAI API integration with streaming support
+- Chat prompt management
 - Error handling for API failures
+- Integration with transcription service for audio content
 
 ### 3. Voice Recording Transcription
 
@@ -67,16 +70,17 @@ Transcribes voice recordings embedded in journal entries using OpenAI's Whisper 
 #### User Interactions
 
 - User can transcribe embedded audio recordings
-- Transcriptions are inserted directly into the journal entry
-- Supports multiple audio formats
+- Supports multiple audio formats (flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm)
+- Transcriptions replace audio embeds in the note
 - Progress feedback during transcription
 
 #### Technical Requirements
 
 - Whisper API integration
-- Audio file handling
+- Audio file format validation
 - MIME type management
 - Progress notification system
+- Error handling for failed transcriptions
 
 ### 4. Journal Summarization
 
@@ -86,9 +90,10 @@ Provides AI-powered summarization of journal entries to extract key insights and
 #### User Interactions
 
 - User can request summary of current journal entry
-- Summary preserves emotional tone and key insights
-- Option for streaming or complete summary
+- Summaries focus on key insights and patterns
+- Support for streaming or complete summary responses
 - Original content backup in inputs folder
+- Automatic transcription of audio before summarization
 
 #### Technical Requirements
 
@@ -96,63 +101,33 @@ Provides AI-powered summarization of journal entries to extract key insights and
 - Content processing and analysis
 - Backup system for original content
 - Streaming response handling
+- Integration with transcription service
 
-## Package Documentation
+## Settings Management
 
-### OpenAI Integration
-
-- Purpose: Handles all AI-related functionality including chat, transcription, and summarization
-- Installation: Built into the plugin
-
-#### Code Example
-
-```typescript
-// Making an OpenAI request
-async makeOpenAIRequest(prompt: string, onChunk?: (chunk: string) => void): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${this.settings.openAIApiKey}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            stream: !!onChunk,
-        }),
-    });
-    // ... handle response
-}
-```
-
-### Obsidian Integration
-
-- Purpose: Core plugin functionality and UI integration
-- Installation: Built into the plugin
-
-#### Code Example
-
-```typescript
-// Adding plugin commands
-this.addCommand({
-  id: "open-todays-journal",
-  name: "Open Today's Journal",
-  callback: async () => {
-    await this.journalService.openTodaysJournal();
-  },
-});
-```
+- Journal folder location configuration
+- Inputs folder for content backups
+- OpenAI API key management
+- Number of past entries to consider (0-10)
+- Toggle for streaming responses
 
 ## Project Structure
 
 ```bash
 ai_journal/
-├── main.ts                 # Plugin entry point
+├── main.ts                    # Plugin entry point
 ├── src/
-│   ├── prompts/           # AI prompt templates
-│   ├── services/          # Core functionality services
-│   ├── settings/          # Plugin settings management
-│   └── types.ts           # TypeScript type definitions
+│   ├── core/
+│   │   ├── ai/
+│   │   │   ├── prompts/      # AI prompt templates
+│   │   │   └── services/     # AI service implementations
+│   │   ├── journal/          # Journal management
+│   │   ├── summary/          # Summarization services
+│   │   └── transcription/    # Audio transcription
+│   ├── interfaces/           # TypeScript interfaces
+│   ├── settings/             # Plugin settings
+│   ├── types.ts              # TypeScript types
+│   └── utils/                # Helper functions
 ```
 
 ## ⚠️ Common Gotchas
