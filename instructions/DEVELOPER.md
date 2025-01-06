@@ -41,9 +41,28 @@ npm run dev
    - Error handling for API calls
 
 3. **WhisperService** (`src/core/ai/services/WhisperService.ts`)
+
    - Audio transcription functionality
    - Supports multiple audio formats
    - Handles file validation
+   - Uses AudioProcessingService for format conversion
+   - Manages Whisper API interactions
+
+4. **AudioProcessingService** (`src/core/transcription/AudioProcessingService.ts`)
+
+   - Handles audio format conversion (m4a to WAV)
+   - Uses Web Audio API (available in Obsidian's Electron environment) to:
+     - Decode m4a audio data
+     - Process audio buffers
+     - Create WAV format without external dependencies
+   - Manages audio buffer processing
+   - WAV file creation and header management
+
+5. **TranscriptionService** (`src/core/transcription/TranscriptionService.ts`)
+   - Manages the transcription workflow
+   - Handles multiple recordings in a note
+   - Uses WhisperService for transcription
+   - Manages note content updates
 
 ### Data Flow
 
@@ -97,10 +116,10 @@ src/
 ├── core/                     # Core functionality
 │   ├── ai/                  # AI-related services
 │   │   ├── prompts/        # AI prompt templates
-│   │   └── services/       # AI service implementations
+│   │   └── services/       # AI service implementations (OpenAI, Whisper)
 │   ├── journal/            # Journal management
 │   ├── summary/            # Summarization services
-│   └── transcription/      # Audio transcription
+│   └── transcription/      # Audio transcription & processing
 ├── interfaces/              # TypeScript interfaces
 ├── settings/               # Plugin settings
 ├── types.ts                # TypeScript types
@@ -127,3 +146,11 @@ src/
 2. Add interface in `src/interfaces/index.ts`
 3. Update `JournalService` to use new service
 4. Add service initialization in `main.ts`
+
+### 4. Adding New Audio Format Support
+
+1. Update `AudioProcessingService` with new conversion method
+2. Add MIME type mapping in `WhisperService`
+3. Update supported formats list
+4. Add error handling for new format
+5. Test with sample audio files

@@ -1,7 +1,7 @@
 import { TFile } from 'obsidian';
 
 export const isSupportedAudioFormat = (file: TFile): boolean => {
-    const supportedFormats = ['flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm'];
+    const supportedFormats = ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm'];
     const extension = file.extension.toLowerCase();
     return supportedFormats.includes(extension);
 };

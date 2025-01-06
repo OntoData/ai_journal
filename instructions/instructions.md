@@ -65,22 +65,27 @@ Enables interactive conversations with AI within journal entries, providing guid
 ### 3. Voice Recording Transcription
 
 Detailed description:
-Transcribes voice recordings embedded in journal entries using OpenAI's Whisper API.
+Transcribes voice recordings embedded in journal entries using OpenAI's Whisper API, with automatic format conversion for better compatibility.
 
 #### User Interactions
 
 - User can transcribe embedded audio recordings
 - Supports multiple audio formats (flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm)
+- Automatic conversion of m4a files to WAV format for better compatibility
 - Transcriptions replace audio embeds in the note
 - Progress feedback during transcription
 
 #### Technical Requirements
 
 - Whisper API integration
-- Audio file format validation
+- Audio file format validation and conversion
+- Web Audio API for format conversion
 - MIME type management
 - Progress notification system
-- Error handling for failed transcriptions
+- Error handling for failed transcriptions or conversions
+- Separation of concerns:
+  - Audio processing (format conversion)
+  - Transcription service (Whisper API interaction)
 
 ### 4. Journal Summarization
 
@@ -120,14 +125,14 @@ ai_journal/
 │   ├── core/
 │   │   ├── ai/
 │   │   │   ├── prompts/      # AI prompt templates
-│   │   │   └── services/     # AI service implementations
+│   │   │   └── services/     # AI service implementations (OpenAI, Whisper)
 │   │   ├── journal/          # Journal management
 │   │   ├── summary/          # Summarization services
-│   │   └── transcription/    # Audio transcription
+│   │   └── transcription/    # Audio transcription & processing
 │   ├── interfaces/           # TypeScript interfaces
-│   ├── settings/             # Plugin settings
-│   ├── types.ts              # TypeScript types
-│   └── utils/                # Helper functions
+│   ├── settings/            # Plugin settings
+│   ├── types.ts             # TypeScript types
+│   └── utils/               # Helper functions
 ```
 
 ## ⚠️ Common Gotchas
