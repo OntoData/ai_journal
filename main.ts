@@ -113,6 +113,16 @@ export class JournalingAssistantPlugin extends Plugin {
         this.transcriptionService.updateSettings(this.settings);
         this.journalService.updateSettings(this.settings);
         this.promptService.updateSettings(this.settings);
+        
+        // Log configuration change if in developer mode
+        if (this.settings.developerMode) {
+            console.log('🔍 Settings updated - Developer mode is enabled');
+            if (this.settings.heliconeApiKey) {
+                console.log('🔍 Helicone monitoring is configured');
+            } else {
+                console.log('🔍 Helicone API key is not set');
+            }
+        }
     }
 
     onunload() {

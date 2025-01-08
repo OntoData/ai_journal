@@ -130,7 +130,7 @@ export class JournalService implements IJournalService {
             await this.transcriptionService.transcribeRecordings();
             const processedContent = activeView.editor.getValue();
 
-            // Extract user's response section - improved regex pattern
+            // Extract user's response section
             const responseMatch = processedContent.match(JournalService.JOURNAL_RESPONSE_PATTERN);
             if (!responseMatch) {
                 new Notice('Could not find journal response section');
@@ -138,15 +138,15 @@ export class JournalService implements IJournalService {
             }
 
             const userResponse = responseMatch[1].trim();
-            let summary: string;
 
             if (this.settings.useStreamingResponse) {
                 let streamedSummary = '';
-                summary = await this.summarizationService.summarize(
+                await this.summarizationService.summarize(
                     userResponse,
                     true,
                     (chunk) => {
                         streamedSummary += chunk;
+                        // Update the editor with the streaming summary
                         const updatedContent = processedContent.replace(
                             JournalService.JOURNAL_RESPONSE_PATTERN,
                             `## Your Journal Response\n\n${streamedSummary}`
@@ -155,7 +155,7 @@ export class JournalService implements IJournalService {
                     }
                 );
             } else {
-                summary = await this.summarizationService.summarize(userResponse);
+                const summary = await this.summarizationService.summarize(userResponse, false);
                 const updatedContent = processedContent.replace(
                     JournalService.JOURNAL_RESPONSE_PATTERN,
                     `## Your Journal Response\n\n${summary}`
@@ -182,14 +182,34 @@ export class JournalService implements IJournalService {
             // Transcribe any audio recordings
             await this.transcriptionService.transcribeRecordings();
 
-            // Get updated content and chat
+            // Get updated content
             const content = activeView.editor.getValue();
-            const chatResponse = await this.chatService.chat(content);
-
-            // Append AI's response
-            activeView.editor.setValue(
-                content + '\n\n---\n## AI Chat\n\n' + chatResponse + '\n\n---\n## Me\n'
-            );
+            
+            // Prepare the base content with AI Chat section
+            const baseContent = content + '\n\n---\n## AI Chat\n\n';
+            activeView.editor.setValue(baseContent);
+            
+            let chatResponse: string;
+            if (this.settings.useStreamingResponse) {
+                let streamedResponse = '';
+                chatResponse = await this.chatService.chat(
+                    content,
+                    true,
+                    (chunk) => {
+                        streamedResponse += chunk;
+                        // Update the editor with the streaming response
+                        activeView.editor.setValue(
+                            baseContent + streamedResponse + '\n\n---\n## Me\n'
+                        );
+                    }
+                );
+            } else {
+                chatResponse = await this.chatService.chat(content, false);
+                // Update the editor with the complete response
+                activeView.editor.setValue(
+                    baseContent + chatResponse + '\n\n---\n## Me\n'
+                );
+            }
 
             new Notice('AI responded in note');
         } catch (error: any) {

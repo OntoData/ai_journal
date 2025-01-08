@@ -126,5 +126,36 @@ export class JournalingAssistantSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     }));
         }
+
+        containerEl.createEl('h3', { text: 'Developer Settings' });
+
+        new Setting(containerEl)
+            .setName('Developer Mode')
+            .setDesc('Enable developer mode for additional debugging features')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.developerMode)
+                .onChange(async (value) => {
+                    this.plugin.settings.developerMode = value;
+                    // Clear Helicone API key when developer mode is disabled
+                    if (!value) {
+                        this.plugin.settings.heliconeApiKey = '';
+                        console.log('🔍 Developer mode disabled - Helicone configuration cleared');
+                    }
+                    await this.plugin.saveSettings();
+                    this.display(); // Refresh to show/hide developer settings
+                }));
+
+        if (this.plugin.settings.developerMode) {
+            new Setting(containerEl)
+                .setName('Helicone API Key')
+                .setDesc('API key for Helicone monitoring (optional)')
+                .addText(text => text
+                    .setPlaceholder('sk-helicone-...')
+                    .setValue(this.plugin.settings.heliconeApiKey)
+                    .onChange(async (value) => {
+                        this.plugin.settings.heliconeApiKey = value;
+                        await this.plugin.saveSettings();
+                    }));
+        }
     }
 } 

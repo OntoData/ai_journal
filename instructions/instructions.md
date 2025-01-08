@@ -142,6 +142,26 @@ Provides flexible prompt management with support for multiple languages and cust
   - File existence validation
   - File content loading
 
+### 6. Developer Mode
+
+Detailed description:
+Provides additional debugging capabilities for developers through Helicone integration for monitoring API calls.
+
+#### User Interactions
+
+- Developer mode can be enabled in settings
+- When enabled, shows additional developer settings
+- Optional Helicone API key configuration for API call monitoring
+- Seamless integration with OpenAI requests when enabled
+
+#### Technical Requirements
+
+- Toggle for developer mode in settings
+- Helicone API key management
+- Conditional Helicone integration with OpenAI client
+- Safe handling of API configurations
+- No impact on regular user experience when disabled
+
 ## Settings Management
 
 - Journal folder location configuration
@@ -161,6 +181,16 @@ Provides flexible prompt management with support for multiple languages and cust
   - Chat prompt file path
   - Summary prompt file path
 - Path validation and error handling
+
+### Developer Settings
+
+- Developer Mode Toggle:
+  - Enables additional debugging features
+  - Shows/hides developer-specific settings
+- Helicone Integration:
+  - Optional API key configuration
+  - Monitors OpenAI API calls when enabled
+  - Only available in developer mode
 
 ## Project Structure
 

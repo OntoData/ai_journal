@@ -5,10 +5,12 @@
   "numberOfPastEntries": 2,
   "useStreamingResponse": true,
   "useCustomPrompts": false,
-  "language": "pl",
+  "language": "en",
   "customPromptPaths": {
     "journal": "",
     "chat": "",
     "summary": ""
-  }
+  },
+  "developerMode": false,
+  "heliconeApiKey": ""
 }

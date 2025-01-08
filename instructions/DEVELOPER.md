@@ -39,6 +39,10 @@ npm run dev
    - Manages OpenAI API interactions
    - Handles streaming responses
    - Error handling for API calls
+   - Supports developer mode with Helicone integration:
+     - Conditional configuration based on developer mode
+     - API call monitoring through Helicone when enabled
+     - Fallback to standard OpenAI client when disabled
 
 3. **WhisperService** (`src/core/ai/services/WhisperService.ts`)
 
@@ -180,3 +184,63 @@ Users can provide their own prompts through:
 3. Update PromptService's defaultPrompts object
 4. Add language option to settings
 5. Update types.ts with new language code
+
+### 6. Using Developer Mode
+
+Developer mode provides enhanced debugging capabilities through Helicone integration:
+
+1. Enable Developer Mode:
+
+   ```typescript
+   // In settings
+   developerMode: true;
+   ```
+
+2. Configure Helicone:
+
+   ```typescript
+   // Add Helicone API key in settings
+   heliconeApiKey: "sk-helicone-...";
+   ```
+
+3. Monitor API Calls:
+
+   - Access Helicone dashboard to view:
+     - Request patterns
+     - Response times
+     - Error rates
+     - Usage statistics
+
+4. Implementation Details:
+   ```typescript
+   // OpenAIService configuration
+   if (this.settings.developerMode && this.settings.heliconeApiKey) {
+     Object.assign(config, {
+       baseURL: "https://oai.helicone.ai/v1",
+       defaultHeaders: {
+         "Helicone-Auth": `Bearer ${this.settings.heliconeApiKey}`,
+       },
+     });
+   }
+   ```
+
+### 7. Debugging Tips
+
+1. Enable Developer Mode:
+
+   - Toggle developer mode in settings
+   - Configure Helicone API key
+   - Monitor API calls through Helicone dashboard
+
+2. Common Debugging Scenarios:
+
+   - API call failures
+   - Response time issues
+   - Rate limiting problems
+   - Usage patterns analysis
+
+3. Best Practices:
+   - Use developer mode only when needed
+   - Keep Helicone API key secure
+   - Monitor API usage patterns
+   - Analyze error patterns through Helicone dashboard

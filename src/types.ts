@@ -11,6 +11,8 @@ export interface JournalingAssistantSettings {
         chat: string;
         summary: string;
     };
+    developerMode: boolean;
+    heliconeApiKey: string;
 }
 
 export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
@@ -25,5 +27,7 @@ export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
         journal: '',
         chat: '',
         summary: ''
-    }
+    },
+    developerMode: false,
+    heliconeApiKey: '',
 }; 
