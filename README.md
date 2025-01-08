@@ -4,6 +4,13 @@ An intelligent journaling companion for Obsidian that enhances your writing expe
 
 ## ✨ Features
 
+### 🌐 Language Support & Custom Prompts
+
+- Support for multiple languages (English and Polish)
+- Choose between default or custom prompts
+- Create and use your own prompt templates
+- Easy language switching from settings
+
 ### 🎯 Smart Daily Journaling
 
 - Automatically generates thoughtful prompts based on your past entries
@@ -54,6 +61,17 @@ An intelligent journaling companion for Obsidian that enhances your writing expe
    - Journal folder location
    - Number of past entries to consider (0-10)
    - Streaming response preference
+   - Language (English/Polish)
+   - Custom prompts (optional)
+
+### Using Custom Prompts
+
+1. Create your prompt files in Markdown format
+2. Enable "Use Custom Prompts" in settings
+3. Set paths to your custom prompt files:
+   - Journal prompt
+   - Chat prompt
+   - Summary prompt
 
 ## 📖 How to Use
 

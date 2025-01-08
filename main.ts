@@ -4,12 +4,14 @@ import { JournalService } from './src/core/journal/JournalService';
 import { OpenAIService } from './src/core/ai/services/OpenAIService';
 import { JournalingAssistantSettingTab } from './src/settings/SettingTab';
 import { TranscriptionService } from './src/core/transcription/TranscriptionService';
+import { PromptService } from './src/core/ai/services/PromptService';
 
 export class JournalingAssistantPlugin extends Plugin {
     settings: JournalingAssistantSettings;
     private journalService: JournalService;
     private openAIService: OpenAIService;
     private transcriptionService: TranscriptionService;
+    private promptService: PromptService;
 
     async onload() {
         await this.loadSettings();
@@ -17,10 +19,12 @@ export class JournalingAssistantPlugin extends Plugin {
         // Initialize services with the new structure
         this.openAIService = new OpenAIService(this.settings);
         this.transcriptionService = new TranscriptionService(this.app, this.settings);
+        this.promptService = new PromptService(this.app, this.settings);
         this.journalService = new JournalService(
             this.app, 
             this.settings, 
-            this.openAIService
+            this.openAIService,
+            this.promptService
         );
 
         // Add settings tab
@@ -108,6 +112,7 @@ export class JournalingAssistantPlugin extends Plugin {
         this.openAIService.updateSettings(this.settings);
         this.transcriptionService.updateSettings(this.settings);
         this.journalService.updateSettings(this.settings);
+        this.promptService.updateSettings(this.settings);
     }
 
     onunload() {

@@ -66,5 +66,65 @@ export class JournalingAssistantSettingTab extends PluginSettingTab {
                     this.plugin.settings.useStreamingResponse = value;
                     await this.plugin.saveSettings();
                 }));
+
+        containerEl.createEl('h3', { text: 'Prompt Settings' });
+
+        new Setting(containerEl)
+            .setName('Use Custom Prompts')
+            .setDesc('Toggle between default language prompts and custom prompts')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.useCustomPrompts)
+                .onChange(async (value) => {
+                    this.plugin.settings.useCustomPrompts = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // Refresh to show/hide relevant settings
+                }));
+
+        if (!this.plugin.settings.useCustomPrompts) {
+            new Setting(containerEl)
+                .setName('Language')
+                .setDesc('Select prompt language')
+                .addDropdown(dropdown => dropdown
+                    .addOption('en', 'English')
+                    .addOption('pl', 'Polish')
+                    .setValue(this.plugin.settings.language)
+                    .onChange(async (value: 'en' | 'pl') => {
+                        this.plugin.settings.language = value;
+                        await this.plugin.saveSettings();
+                    }));
+        } else {
+            new Setting(containerEl)
+                .setName('Journal Prompt File')
+                .setDesc('Path to custom journal prompt file')
+                .addText(text => text
+                    .setPlaceholder('prompts/journal.md')
+                    .setValue(this.plugin.settings.customPromptPaths.journal)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customPromptPaths.journal = value;
+                        await this.plugin.saveSettings();
+                    }));
+
+            new Setting(containerEl)
+                .setName('Chat Prompt File')
+                .setDesc('Path to custom chat prompt file')
+                .addText(text => text
+                    .setPlaceholder('prompts/chat.md')
+                    .setValue(this.plugin.settings.customPromptPaths.chat)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customPromptPaths.chat = value;
+                        await this.plugin.saveSettings();
+                    }));
+
+            new Setting(containerEl)
+                .setName('Summary Prompt File')
+                .setDesc('Path to custom summary prompt file')
+                .addText(text => text
+                    .setPlaceholder('prompts/summary.md')
+                    .setValue(this.plugin.settings.customPromptPaths.summary)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customPromptPaths.summary = value;
+                        await this.plugin.saveSettings();
+                    }));
+        }
     }
 } 

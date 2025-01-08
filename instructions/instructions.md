@@ -108,6 +108,40 @@ Provides AI-powered summarization of journal entries to extract key insights and
 - Streaming response handling
 - Integration with transcription service
 
+### 5. Language and Custom Prompt Support
+
+Detailed description:
+Provides flexible prompt management with support for multiple languages and custom user-defined prompts.
+
+#### User Interactions
+
+- User can choose between default prompts (with language options) or custom prompts
+- For default prompts:
+  - Supports multiple languages (initially English and Polish)
+  - Language selection affects all AI interactions (journaling, chat, summarization)
+  - Language can be changed from settings
+- For custom prompts:
+  - User can specify paths to custom prompt files from their vault
+  - Custom prompts override language settings
+  - Paths are validated to ensure they exist in the vault
+  - Changes take effect immediately without plugin restart
+
+#### Technical Requirements
+
+- Prompt Management:
+  - Default prompt library with language variants
+  - Custom prompt file loading (with existence validation)
+  - Support for switching between default and custom prompts
+- Settings Management:
+  - Prompt mode toggle (Default/Custom)
+  - Language selector for default mode
+  - File path inputs for custom mode
+  - Basic path validation (file existence check)
+- File System:
+  - Safe file path resolution within vault
+  - File existence validation
+  - File content loading
+
 ## Settings Management
 
 - Journal folder location configuration
@@ -115,6 +149,18 @@ Provides AI-powered summarization of journal entries to extract key insights and
 - OpenAI API key management
 - Number of past entries to consider (0-10)
 - Toggle for streaming responses
+
+### Prompt Configuration
+
+- Prompt Mode Selection:
+  - Toggle between Default/Custom modes
+- Language Settings (Default mode):
+  - Language selector (English/Polish)
+- Custom Prompt Paths (Custom mode):
+  - Journal prompt file path
+  - Chat prompt file path
+  - Summary prompt file path
+- Path validation and error handling
 
 ## Project Structure
 
@@ -141,6 +187,7 @@ ai_journal/
 - Handle streaming responses properly
 - Backup original content before AI summarization
 - Validate API key before operations
+- Verify custom prompt files exist before attempting to use them
 
 ## 🔍 Checklist Before Using with Cursor
 

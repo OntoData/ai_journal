@@ -1,10 +1,13 @@
 import { Notice } from 'obsidian';
 import { OpenAIService } from '../ai/services/OpenAIService';
 import { ISummarizationService } from '../../interfaces';
-import summaryPrompt from '../ai/prompts/summaryPrompt';
+import { PromptService } from '../ai/services/PromptService';
 
 export class SummarizationService implements ISummarizationService {
-    constructor(private openAIService: OpenAIService) {}
+    constructor(
+        private openAIService: OpenAIService,
+        private promptService: PromptService
+    ) {}
 
     async summarize(
         content: string, 
@@ -12,6 +15,7 @@ export class SummarizationService implements ISummarizationService {
         onChunk?: (chunk: string) => void
     ): Promise<string> {
         try {
+            const summaryPrompt = await this.promptService.getPrompt('summary');
             const prompt = `${summaryPrompt}\n\n${content}`;
             return await this.openAIService.makeOpenAIRequest(
                 prompt, 
@@ -22,4 +26,4 @@ export class SummarizationService implements ISummarizationService {
             throw error;
         }
     }
-} 
+}

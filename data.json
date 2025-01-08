@@ -3,5 +3,12 @@
   "inputsFolder": "Inputs",
   "openAIApiKey": "",
   "numberOfPastEntries": 2,
-  "useStreamingResponse": true
+  "useStreamingResponse": true,
+  "useCustomPrompts": false,
+  "language": "pl",
+  "customPromptPaths": {
+    "journal": "",
+    "chat": "",
+    "summary": ""
+  }
 }

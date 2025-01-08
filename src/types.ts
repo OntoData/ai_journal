@@ -4,6 +4,13 @@ export interface JournalingAssistantSettings {
     openAIApiKey: string;
     numberOfPastEntries: number;
     useStreamingResponse: boolean;
+    useCustomPrompts: boolean;
+    language: 'en' | 'pl';
+    customPromptPaths: {
+        journal: string;
+        chat: string;
+        summary: string;
+    };
 }
 
 export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
@@ -12,4 +19,11 @@ export const DEFAULT_SETTINGS: JournalingAssistantSettings = {
     openAIApiKey: '',
     numberOfPastEntries: 3,
     useStreamingResponse: true,
+    useCustomPrompts: false,
+    language: 'en',
+    customPromptPaths: {
+        journal: '',
+        chat: '',
+        summary: ''
+    }
 }; 

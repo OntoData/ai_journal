@@ -116,6 +116,8 @@ src/
 ├── core/                     # Core functionality
 │   ├── ai/                  # AI-related services
 │   │   ├── prompts/        # AI prompt templates
+│   │   │   ├── en/        # English prompts
+│   │   │   └── pl/        # Polish prompts
 │   │   └── services/       # AI service implementations (OpenAI, Whisper)
 │   ├── journal/            # Journal management
 │   ├── summary/            # Summarization services
@@ -130,9 +132,22 @@ src/
 
 ### 1. Adding a New AI Prompt
 
-1. Create new prompt file in `src/core/ai/prompts/`
-2. Update relevant service to use the new prompt
-3. Add any necessary interface updates
+There are two ways to add prompts:
+
+#### Default Language Prompts
+
+1. Create new prompt file in `src/core/ai/prompts/[language]/`
+2. Add the prompt to the corresponding language folder (en/pl)
+3. Update PromptService's defaultPrompts object
+4. Add any necessary interface updates
+
+#### Custom User Prompts
+
+Users can provide their own prompts through:
+
+1. Creating markdown files in their vault
+2. Configuring paths in plugin settings
+3. The plugin validates file existence before using
 
 ### 2. Extending Settings
 
@@ -154,3 +169,14 @@ src/
 3. Update supported formats list
 4. Add error handling for new format
 5. Test with sample audio files
+
+### 5. Adding New Language Support
+
+1. Create new language folder in `src/core/ai/prompts/[language]/`
+2. Add translated versions of all prompts:
+   - chatPrompt.ts
+   - journalPrompt.ts
+   - summaryPrompt.ts
+3. Update PromptService's defaultPrompts object
+4. Add language option to settings
+5. Update types.ts with new language code

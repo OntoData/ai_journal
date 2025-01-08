@@ -7,7 +7,7 @@ import { TranscriptionService } from '../transcription/TranscriptionService';
 import { SummarizationService } from '../summary/SummarizationService';
 import { ChatService } from '../ai/services/ChatService';
 import { JournalManager } from './JournalManager';
-import journalPrompt from '../ai/prompts/journalPrompt';
+import { PromptService } from '../ai/services/PromptService';
 
 export class JournalService implements IJournalService {
     private static readonly JOURNAL_RESPONSE_PATTERN = /## Your Journal Response\s*([\s\S]*$)/;
@@ -20,12 +20,13 @@ export class JournalService implements IJournalService {
     constructor(
         private app: App,
         private settings: JournalingAssistantSettings,
-        private openAIService: OpenAIService
+        private openAIService: OpenAIService,
+        private promptService: PromptService
     ) {
         this.journalManager = new JournalManager(this.app, this.settings);
         this.whisperService = new WhisperService(this.app.vault, this.settings.openAIApiKey);
-        this.summarizationService = new SummarizationService(this.openAIService);
-        this.chatService = new ChatService(this.openAIService);
+        this.summarizationService = new SummarizationService(this.openAIService, this.promptService);
+        this.chatService = new ChatService(this.openAIService, this.promptService);
         this.transcriptionService = new TranscriptionService(this.app, this.settings);
     }
 
@@ -62,7 +63,7 @@ export class JournalService implements IJournalService {
                         if (this.settings.useStreamingResponse) {
                             // Stream the AI response
                             await this.openAIService.makeOpenAIRequest(
-                                this.createJournalPrompt(pastEntries),
+                                await this.createJournalPrompt(pastEntries),
                                 (chunk) => {
                                     const currentContent = view.editor.getValue();
                                     view.editor.setValue(currentContent + chunk);
@@ -71,7 +72,7 @@ export class JournalService implements IJournalService {
                         } else {
                             // Get complete response
                             const aiPrompt = await this.openAIService.makeOpenAIRequest(
-                                this.createJournalPrompt(pastEntries)
+                                await this.createJournalPrompt(pastEntries)
                             );
                             view.editor.setValue(view.editor.getValue() + aiPrompt);
                         }
@@ -100,7 +101,8 @@ export class JournalService implements IJournalService {
         }
     }
 
-    private createJournalPrompt(pastEntries: string[]): string {
+    private async createJournalPrompt(pastEntries: string[]): Promise<string> {
+        const journalPrompt = await this.promptService.getPrompt('journal');
         const pastEntriesText = pastEntries.length > 0 
             ? `Past Entries:\n\n${pastEntries.join('\n\n---\n\n')}`
             : 'No past entries available.';
